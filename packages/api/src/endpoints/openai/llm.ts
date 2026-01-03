@@ -125,6 +125,8 @@ export function getOpenAILLMConfig({
   defaultParams,
   useOpenRouter,
   modelOptions: _modelOptions,
+  sessionId,
+  userId,
 }: {
   apiKey: string;
   streaming: boolean;
@@ -136,6 +138,8 @@ export function getOpenAILLMConfig({
   defaultParams?: Record<string, unknown>;
   useOpenRouter?: boolean;
   azure?: false | t.AzureOptions;
+  sessionId?: string;
+  userId?: string;
 }): Pick<t.LLMConfigResult, 'llmConfig' | 'tools'> & {
   azure?: t.AzureOptions;
 } {
@@ -335,6 +339,17 @@ export function getOpenAILLMConfig({
       llmConfig.useResponsesApi === true ? 'max_output_tokens' : 'max_completion_tokens';
     modelKwargs[paramName] = llmConfig.maxTokens;
     delete llmConfig.maxTokens;
+    hasModelKwargs = true;
+  }
+
+  // Add session_id and user_id to modelKwargs if provided
+  if (sessionId) {
+    modelKwargs.session_id = sessionId;
+    hasModelKwargs = true;
+  }
+  
+  if (userId) {
+    modelKwargs.user_id = userId;
     hasModelKwargs = true;
   }
 

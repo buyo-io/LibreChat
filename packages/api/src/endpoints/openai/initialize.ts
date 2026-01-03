@@ -122,6 +122,11 @@ export async function initializeOpenAI({
     throw new Error(`${endpoint} API Key not provided.`);
   }
 
+  // Check if session_id and user_id injection is enabled for this endpoint
+  const endpointConfig = appConfig?.endpoints?.[endpoint as keyof typeof appConfig.endpoints] || 
+                       appConfig?.endpoints?.all;
+  const injectSessionInfo = endpointConfig?.injectSessionInfo === true;
+  
   const modelOptions = {
     ...(model_parameters ?? {}),
     model: modelName,
@@ -131,6 +136,8 @@ export async function initializeOpenAI({
   const finalClientOptions: OpenAIConfigOptions = {
     ...clientOptions,
     modelOptions,
+    sessionId: injectSessionInfo ? req.body.conversationId : undefined,
+    userId: injectSessionInfo ? req.user?.id : undefined,
   };
 
   const options = getOpenAIConfig(apiKey, finalClientOptions, endpoint);

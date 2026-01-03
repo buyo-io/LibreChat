@@ -1,0 +1,44 @@
+# Example configuration for session_id and user_id injection
+# This demonstrates how to enable the feature for different endpoints
+
+version: 1.2.1
+
+endpoints:
+  # Enable session info injection for OpenAI
+  openAI:
+    injectSessionInfo: true
+    streamRate: 1
+    titleConvo: true
+    titleModel: 'gpt-4o-mini'
+
+  # Enable session info injection for Google
+  google:
+    injectSessionInfo: true
+    titleConvo: true
+    titleModel: 'gemini-2.0-flash-lite'
+
+  # Enable session info injection for all custom endpoints
+  all:
+    injectSessionInfo: false # Default: disabled, can be overridden per endpoint
+
+  custom:
+    # Example custom endpoint with session injection enabled
+    - name: 'my-provider'
+      apiKey: '${MY_PROVIDER_API_KEY}'
+      baseURL: 'https://api.my-provider.com/v1'
+      injectSessionInfo: true
+      models:
+        default: ['my-model', 'another-model']
+        fetch: false
+      titleConvo: true
+      titleModel: 'my-model'
+      modelDisplayLabel: 'My Provider'
+
+    # Example custom endpoint without session injection
+    - name: 'another-provider'
+      apiKey: '${ANOTHER_PROVIDER_API_KEY}'
+      baseURL: 'https://api.another-provider.com/v1'
+      injectSessionInfo: false # Explicitly disabled
+      models:
+        default: ['provider-model']
+        fetch: true

@@ -32,6 +32,8 @@ export function getOpenAIConfig(
     streaming = true,
     modelOptions = {},
     reverseProxyUrl: baseURL,
+    sessionId,
+    userId,
   } = options;
 
   /** Extract default params from customParams.paramDefinitions */
@@ -112,6 +114,8 @@ export function getOpenAIConfig(
       defaultParams,
       modelOptions,
       useOpenRouter,
+      sessionId,
+      userId,
     });
     llmConfig = openaiResult.llmConfig;
     azure = openaiResult.azure;

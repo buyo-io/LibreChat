@@ -224,6 +224,23 @@ actions:
 
 # Definition of custom endpoints
 endpoints:
+  # Session & User ID Injection Documentation
+  # ------------------------------------
+  # The injectSessionInfo option can be added to any endpoint to enable
+  # injection of session_id and user_id into API requests.
+  #
+  # Example usage:
+  # openAI:
+  #   injectSessionInfo: true  # Enable session_id and user_id injection
+  # google:
+  #   injectSessionInfo: true  # Enable for Google endpoint
+  # custom:
+  #   - name: 'MyProvider'
+  #     injectSessionInfo: true  # Enable for custom provider
+  #
+  # When enabled, these identifiers are automatically added to the modelKwargs
+  # field of API requests for tracking and analytics purposes.
+  
   # assistants:
   #   disableBuilder: false # Disable Assistants Builder Interface by setting to `true`
   #   pollIntervalMs: 3000  # Polling interval for checking assistant updates
