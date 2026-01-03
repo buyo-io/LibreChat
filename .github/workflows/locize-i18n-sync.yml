@@ -10,6 +10,8 @@ jobs:
   sync-translations:
     name: Sync Translation Keys with Locize
     runs-on: ubuntu-latest
+    outputs:
+      skip_sync: ${{ steps.locize_secrets.outputs.skip }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -22,12 +24,40 @@ jobs:
       - name: Install locize CLI
         run: npm install -g locize-cli
 
+      - name: Validate Locize secrets
+        id: locize_secrets
+        env:
+          LOCIZE_API_KEY: ${{ secrets.LOCIZE_API_KEY }}
+          LOCIZE_PROJECT_ID: ${{ secrets.LOCIZE_PROJECT_ID }}
+        run: |
+          missing=false
+          if [ -z "$LOCIZE_API_KEY" ]; then
+            echo "Missing required secret: LOCIZE_API_KEY"
+            missing=true
+          fi
+          if [ -z "$LOCIZE_PROJECT_ID" ]; then
+            echo "Missing required secret: LOCIZE_PROJECT_ID"
+            missing=true
+          fi
+          if [ "$missing" = true ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       # Sync translations (Push missing keys & remove deleted ones)
       - name: Sync Locize with Repository
-        if: ${{ github.event_name == 'push' }}
+        if: ${{ github.event_name == 'push' && steps.locize_secrets.outputs.skip == 'false' }}
+        env:
+          LOCIZE_API_KEY: ${{ secrets.LOCIZE_API_KEY }}
+          LOCIZE_PROJECT_ID: ${{ secrets.LOCIZE_PROJECT_ID }}
         run: |
           cd client/src/locales
-          locize sync --api-key ${{ secrets.LOCIZE_API_KEY }} --project-id ${{ secrets.LOCIZE_PROJECT_ID }} --language en
+          locize sync --api-key "$LOCIZE_API_KEY" --project-id "$LOCIZE_PROJECT_ID" --language en
+
+      - name: Skip sync when Locize secrets are missing
+        if: ${{ github.event_name == 'push' && steps.locize_secrets.outputs.skip == 'true' }}
+        run: echo "Skipping sync because required Locize secrets are not configured."
 
       # When triggered by repository_dispatch, skip sync step.
       - name: Skip sync step on non-push events
@@ -38,6 +68,7 @@ jobs:
     name: Create Translation PR on Version Published
     runs-on: ubuntu-latest
     needs: sync-translations
+    if: ${{ github.event_name == 'repository_dispatch' && needs.sync-translations.outputs.skip_sync == 'false' }}
     permissions:
       contents: write
       pull-requests: write
