@@ -9,7 +9,7 @@ endpoints:
     injectSessionInfo: true
     streamRate: 1
     titleConvo: true
-    titleModel: 'gpt-4o-mini'
+    titleModel: 'gpt-4.1'
 
   # Enable session info injection for Google
   google:
@@ -18,6 +18,7 @@ endpoints:
     titleModel: 'gemini-2.0-flash-lite'
 
   # Enable session info injection for all custom endpoints
+  # Test Change
   all:
     injectSessionInfo: false # Default: disabled, can be overridden per endpoint
 
