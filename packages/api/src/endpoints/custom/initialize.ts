@@ -5,6 +5,7 @@ import {
   FetchTokenConfig,
   extractEnvVariable,
 } from 'librechat-data-provider';
+import { logger } from '@librechat/data-schemas';
 import type { TEndpoint } from 'librechat-data-provider';
 import type { AppConfig } from '@librechat/data-schemas';
 import type { BaseInitializeParams, InitializeResultBase, EndpointTokenConfig } from '~/types';
@@ -68,6 +69,8 @@ export async function initializeCustom({
   const appConfig = req.config;
   const { key: expiresAt } = req.body;
 
+  logger.info(`[Custom Endpoint] Initializing endpoint: ${endpoint}`);
+
   const endpointConfig = getCustomEndpointConfig({
     endpoint,
     appConfig,
@@ -76,6 +79,12 @@ export async function initializeCustom({
   if (!endpointConfig) {
     throw new Error(`Config not found for the ${endpoint} custom endpoint.`);
   }
+
+  logger.info(`[Custom Endpoint] Config loaded for ${endpoint}:`, {
+    baseURL: endpointConfig.baseURL,
+    modelDisplayLabel: endpointConfig.modelDisplayLabel,
+    injectSessionInfo: (endpointConfig as any).injectSessionInfo,
+  });
 
   const CUSTOM_API_KEY = extractEnvVariable(endpointConfig.apiKey ?? '');
   const CUSTOM_BASE_URL = extractEnvVariable(endpointConfig.baseURL ?? '');
@@ -159,6 +168,12 @@ export async function initializeCustom({
     ...customOptions,
   };
 
+  logger.info(`[Custom Endpoint] Client options configured for ${endpoint}:`, {
+    baseURL,
+    model: (model_parameters as any)?.model,
+    injectSessionInfo: customOptions.injectSessionInfo,
+  });
+
   const modelOptions = { ...(model_parameters ?? {}), user: userId };
   const finalClientOptions = {
     modelOptions,
@@ -169,6 +184,10 @@ export async function initializeCustom({
   if (options != null) {
     (options as InitializeResultBase).useLegacyContent = true;
     (options as InitializeResultBase).endpointTokenConfig = endpointTokenConfig;
+    logger.info(`[Custom Endpoint] OpenAI config created for ${endpoint}`, {
+      model: options.llmConfig?.model_name,
+      temperature: options.modelOptions?.temperature,
+    });
   }
 
   const streamRate = clientOptions.streamRate as number | undefined;
