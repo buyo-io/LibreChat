@@ -725,7 +725,18 @@ class AgentClient extends BaseClient {
       abortController: opts.abortController,
     });
 
+    logger.debug('[sendCompletion] contentParts after chatCompletion:', {
+      contentPartsLength: this.contentParts?.length,
+      contentParts: JSON.stringify(this.contentParts),
+    });
+
     const completion = filterMalformedContentParts(this.contentParts);
+    
+    logger.debug('[sendCompletion] completion after filterMalformedContentParts:', {
+      completionLength: completion?.length,
+      completion: JSON.stringify(completion),
+    });
+    
     return { completion };
   }
 
