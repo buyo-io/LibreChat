@@ -56,7 +56,7 @@ jobs:
           file: ${{ matrix.file }}
           push: true
           tags: |
-            ghcr.io/buyo/${{ matrix.image_name }}:${{ github.ref_name }}
-            ghcr.io/buyo/${{ matrix.image_name }}:latest
+            ghcr.io/buyo-io/${{ matrix.image_name }}:${{ github.ref_name }}
+            ghcr.io/buyo-io/${{ matrix.image_name }}:latest
           platforms: linux/amd64
           target: ${{ matrix.target }}
