@@ -37,6 +37,7 @@ export function createFetch({
     }
     const urlStr = typeof url === 'string' ? url : url.toString();
     const endpointLabel = endpoint ? `[${endpoint}] ` : '';
+    
     logger.debug(`${endpointLabel}Making request to ${urlStr}`, {
       method: init?.method || 'GET',
       hasBody: !!init?.body,
@@ -52,11 +53,37 @@ export function createFetch({
       }
       
       const duration = Date.now() - startTime;
+      const contentType = response.headers.get('content-type');
+      
       logger.debug(`${endpointLabel}Response received from ${urlStr}`, {
         status: response.status,
         duration: `${duration}ms`,
-        contentType: response.headers.get('content-type'),
+        contentType,
       });
+      
+      // For custom endpoints making chat completions requests, log the response body
+      if (endpoint && urlStr.includes('/chat/completions') && response.ok) {
+        try {
+          // Clone the response to avoid consuming the body
+          const responseClone = response.clone();
+          const bodyText = await responseClone.text();
+          
+          if (bodyText) {
+            const responseBody = JSON.parse(bodyText);
+            logger.debug(`${endpointLabel}Chat completion response:`, {
+              hasChoices: !!responseBody.choices,
+              choicesLength: responseBody.choices?.length,
+              firstChoiceHasMessage: !!responseBody.choices?.[0]?.message,
+              messageContent: responseBody.choices?.[0]?.message?.content?.substring?.(0, 100),
+              usage: responseBody.usage,
+            });
+          }
+        } catch (parseError) {
+          logger.warn(`${endpointLabel}Could not parse response body for logging:`, {
+            error: parseError instanceof Error ? parseError.message : String(parseError),
+          });
+        }
+      }
       
       return response;
     } catch (error) {
