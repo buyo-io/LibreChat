@@ -182,13 +182,18 @@ export async function initializeCustom({
 
    const options = getOpenAIConfig(apiKey, finalClientOptions, endpoint);
    if (options != null) {
-     (options as InitializeResultBase).useLegacyContent = true;
+     // Only use legacy content mode if specifically configured
+     // Custom endpoints should work with standard OpenAI response format
+     if ((endpointConfig as any).useLegacyContent === true) {
+       (options as InitializeResultBase).useLegacyContent = true;
+     }
      (options as InitializeResultBase).endpointTokenConfig = endpointTokenConfig;
      logger.info(`[Custom Endpoint] OpenAI config created for ${endpoint}`, {
        model: options.llmConfig?.model_name,
        temperature: options.modelOptions?.temperature,
        baseURL: options.configOptions?.baseURL,
        streaming: options.llmConfig?.streaming,
+       useLegacyContent: (options as InitializeResultBase).useLegacyContent,
      });
      
      // Log detailed configuration for debugging
