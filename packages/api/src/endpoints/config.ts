@@ -1,4 +1,5 @@
 import { Providers } from '@librechat/agents';
+import { logger } from '@librechat/data-schemas';
 import { EModelEndpoint } from 'librechat-data-provider';
 import type { TEndpoint } from 'librechat-data-provider';
 import type { AppConfig } from '@librechat/data-schemas';
@@ -72,24 +73,45 @@ export function getProviderConfig({
   let overrideProvider = provider;
   let customEndpointConfig: Partial<TEndpoint> | undefined;
 
+  logger.debug(`[getProviderConfig] Resolving provider: ${provider}`, {
+    isInMap: !!getOptions,
+    isLowercaseInMap: !!providerConfigMap[provider.toLowerCase()],
+  });
+
   if (!getOptions && providerConfigMap[provider.toLowerCase()] != null) {
     overrideProvider = provider.toLowerCase();
     getOptions = providerConfigMap[overrideProvider];
+    logger.debug(`[getProviderConfig] Found provider using lowercase: ${overrideProvider}`);
   } else if (!getOptions) {
+    logger.debug(`[getProviderConfig] Provider not in map, checking for custom endpoint: ${provider}`);
     customEndpointConfig = getCustomEndpointConfig({ endpoint: provider, appConfig });
-    if (!customEndpointConfig) {
+    if (customEndpointConfig) {
+      getOptions = initializeCustom;
+      overrideProvider = Providers.OPENAI;
+      logger.info(`[getProviderConfig] Found custom endpoint config for: ${provider}`, {
+        baseURL: customEndpointConfig.baseURL,
+        modelDisplayLabel: customEndpointConfig.modelDisplayLabel,
+      });
+    } else {
+      logger.error(`[getProviderConfig] Provider not found: ${provider}`);
       throw new Error(`Provider ${provider} not supported`);
     }
-    getOptions = initializeCustom;
-    overrideProvider = Providers.OPENAI;
   }
 
   if (isKnownCustomProvider(overrideProvider) && !customEndpointConfig) {
+    logger.debug(`[getProviderConfig] Known custom provider, checking for config: ${overrideProvider}`);
     customEndpointConfig = getCustomEndpointConfig({ endpoint: provider, appConfig });
     if (!customEndpointConfig) {
+      logger.error(`[getProviderConfig] No config found for known custom provider: ${provider}`);
       throw new Error(`Provider ${provider} not supported`);
     }
   }
+
+  logger.debug(`[getProviderConfig] Resolution complete`, {
+    provider,
+    overrideProvider,
+    hasCustomConfig: !!customEndpointConfig,
+  });
 
   return {
     getOptions,
