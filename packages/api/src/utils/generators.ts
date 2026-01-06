@@ -15,9 +15,11 @@ import { sendEvent } from './events';
 export function createFetch({
   directEndpoint = false,
   reverseProxyUrl = '',
+  endpoint = '',
 }: {
   directEndpoint?: boolean;
   reverseProxyUrl?: string;
+  endpoint?: string;
 }) {
   /**
    * Makes an HTTP request and logs the process.
@@ -33,11 +35,38 @@ export function createFetch({
     if (directEndpoint) {
       url = reverseProxyUrl;
     }
-    logger.debug(`Making request to ${url}`);
-    if (typeof Bun !== 'undefined') {
-      return await fetch(url, init);
+    const urlStr = typeof url === 'string' ? url : url.toString();
+    const endpointLabel = endpoint ? `[${endpoint}] ` : '';
+    logger.debug(`${endpointLabel}Making request to ${urlStr}`, {
+      method: init?.method || 'GET',
+      hasBody: !!init?.body,
+    });
+    
+    const startTime = Date.now();
+    let response;
+    try {
+      if (typeof Bun !== 'undefined') {
+        response = await fetch(url, init);
+      } else {
+        response = await fetch(url, init);
+      }
+      
+      const duration = Date.now() - startTime;
+      logger.debug(`${endpointLabel}Response received from ${urlStr}`, {
+        status: response.status,
+        duration: `${duration}ms`,
+        contentType: response.headers.get('content-type'),
+      });
+      
+      return response;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      logger.error(`${endpointLabel}Request failed to ${urlStr}`, {
+        error: error instanceof Error ? error.message : String(error),
+        duration: `${duration}ms`,
+      });
+      throw error;
     }
-    return await fetch(url, init);
   };
 }
 

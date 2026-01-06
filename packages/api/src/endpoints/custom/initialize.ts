@@ -180,15 +180,23 @@ export async function initializeCustom({
     ...clientOptions,
   };
 
-  const options = getOpenAIConfig(apiKey, finalClientOptions, endpoint);
-  if (options != null) {
-    (options as InitializeResultBase).useLegacyContent = true;
-    (options as InitializeResultBase).endpointTokenConfig = endpointTokenConfig;
-    logger.info(`[Custom Endpoint] OpenAI config created for ${endpoint}`, {
-      model: options.llmConfig?.model_name,
-      temperature: options.modelOptions?.temperature,
-    });
-  }
+   const options = getOpenAIConfig(apiKey, finalClientOptions, endpoint);
+   if (options != null) {
+     (options as InitializeResultBase).useLegacyContent = true;
+     (options as InitializeResultBase).endpointTokenConfig = endpointTokenConfig;
+     logger.info(`[Custom Endpoint] OpenAI config created for ${endpoint}`, {
+       model: options.llmConfig?.model_name,
+       temperature: options.modelOptions?.temperature,
+       baseURL: options.configOptions?.baseURL,
+       streaming: options.llmConfig?.streaming,
+     });
+     
+     // Log detailed configuration for debugging
+     logger.debug(`[Custom Endpoint] Full LLM Config for ${endpoint}:`, {
+       llmConfig: JSON.stringify(options.llmConfig, null, 2),
+       configOptions: JSON.stringify(options.configOptions, null, 2),
+     });
+   }
 
   const streamRate = clientOptions.streamRate as number | undefined;
   if (streamRate) {

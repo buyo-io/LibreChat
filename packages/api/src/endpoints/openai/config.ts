@@ -179,11 +179,15 @@ export function getOpenAIConfig(
     configOptions.organization = process.env.OPENAI_ORGANIZATION;
   }
 
-  if (directEndpoint === true && configOptions?.baseURL != null) {
-    configOptions.fetch = createFetch({
-      directEndpoint: directEndpoint,
-      reverseProxyUrl: configOptions?.baseURL,
-    }) as unknown as Fetch;
+  if (configOptions?.baseURL != null) {
+    if (directEndpoint === true || (endpoint && endpoint !== 'openai' && endpoint !== 'azureOpenAI')) {
+      // For custom endpoints or when directEndpoint is true, add detailed logging
+      configOptions.fetch = createFetch({
+        directEndpoint: directEndpoint === true,
+        reverseProxyUrl: configOptions?.baseURL,
+        endpoint: endpoint || 'unknown',
+      }) as unknown as Fetch;
+    }
   }
 
   const result: t.OpenAIConfigResult = {
