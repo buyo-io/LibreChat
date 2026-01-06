@@ -55,5 +55,5 @@ jobs:
           tags: |
             buyo/${{ matrix.image_name }}:${{ env.LATEST_TAG }}
             buyo/${{ matrix.image_name }}:latest
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           target: ${{ matrix.target }}

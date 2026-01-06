@@ -65,5 +65,5 @@ jobs:
           tags: |
             ghcr.io/buyo/${{ matrix.image_name }}:${{ github.sha }}
             ghcr.io/buyo/${{ matrix.image_name }}:latest
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           target: ${{ matrix.target }}

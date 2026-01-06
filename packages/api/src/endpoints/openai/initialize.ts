@@ -123,10 +123,15 @@ export async function initializeOpenAI({
   }
 
   // Check if session_id and user_id injection is enabled for this endpoint
-  const endpointConfig = appConfig?.endpoints?.[endpoint as keyof typeof appConfig.endpoints] || 
-                       appConfig?.endpoints?.all;
-  const injectSessionInfo = endpointConfig?.injectSessionInfo === true;
-  
+  const endpointConfig =
+    appConfig?.endpoints?.[endpoint as keyof typeof appConfig.endpoints] || appConfig?.endpoints?.all;
+
+  const injectSessionInfo =
+    !!endpointConfig &&
+    !Array.isArray(endpointConfig) &&
+    'injectSessionInfo' in endpointConfig &&
+    endpointConfig.injectSessionInfo === true;
+
   const modelOptions = {
     ...(model_parameters ?? {}),
     model: modelName,
