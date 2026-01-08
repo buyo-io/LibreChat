@@ -10,19 +10,26 @@ import { sendEvent } from './events';
  * @param params
  * @param params.directEndpoint - Whether to use a direct endpoint.
  * @param params.reverseProxyUrl - The reverse proxy URL to use for the request.
+ * @param params.sessionId - Optional session ID to inject into request body
+ * @param params.userId - Optional user ID to inject into request body
  * @returns A promise that resolves to the response of the fetch request.
  */
 export function createFetch({
   directEndpoint = false,
   reverseProxyUrl = '',
   endpoint = '',
+  sessionId,
+  userId,
 }: {
   directEndpoint?: boolean;
   reverseProxyUrl?: string;
   endpoint?: string;
+  sessionId?: string;
+  userId?: string;
 }) {
   /**
    * Makes an HTTP request and logs the process.
+   * Injects session_id and user_id into the request body for chat/completions endpoints.
    * @param url - The URL to make the request to. Can be a string or a Request object.
    * @param init - Optional init options for the request.
    * @returns A promise that resolves to the response of the fetch request.
@@ -38,18 +45,53 @@ export function createFetch({
     const urlStr = typeof url === 'string' ? url : url.toString();
     const endpointLabel = endpoint ? `[${endpoint}] ` : '';
     
-    logger.debug(`${endpointLabel}Making request to ${urlStr}`, {
-      method: init?.method || 'GET',
-      hasBody: !!init?.body,
+    // Create a mutable copy of init to potentially modify the body
+    let modifiedInit = { ...init };
+    
+    // Inject session_id and user_id into request body for chat completions
+    if ((sessionId || userId) && urlStr.includes('/chat/completions')) {
+      try {
+        if (modifiedInit.body && typeof modifiedInit.body === 'string') {
+          const requestBody = JSON.parse(modifiedInit.body);
+          
+          logger.info(`${endpointLabel}Injecting session info into request`, {
+            hasSessionId: !!sessionId,
+            hasUserId: !!userId,
+            sessionId: sessionId ? '[REDACTED]' : undefined,
+            userId: userId ? '[REDACTED]' : undefined,
+          });
+          
+          // Inject the parameters into the request body
+          if (sessionId) {
+            requestBody.session_id = sessionId;
+          }
+          if (userId) {
+            requestBody.user_id = userId;
+          }
+          
+          modifiedInit.body = JSON.stringify(requestBody);
+        }
+      } catch (error) {
+        logger.warn(`${endpointLabel}Failed to inject session info into request body:`, {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+    
+    logger.info(`${endpointLabel}Making request to ${urlStr}`, {
+      method: modifiedInit?.method || 'GET',
+      hasBody: !!modifiedInit?.body,
+      sessionIdInjected: sessionId ? true : false,
+      userIdInjected: userId ? true : false,
     });
     
     const startTime = Date.now();
     let response;
     try {
       if (typeof Bun !== 'undefined') {
-        response = await fetch(url, init);
+        response = await fetch(url, modifiedInit);
       } else {
-        response = await fetch(url, init);
+        response = await fetch(url, modifiedInit);
       }
       
       const duration = Date.now() - startTime;

@@ -1,6 +1,7 @@
 import { ProxyAgent } from 'undici';
 import { Providers } from '@librechat/agents';
 import { KnownEndpoints, EModelEndpoint } from 'librechat-data-provider';
+import { logger } from '@librechat/data-schemas';
 import type * as t from '~/types';
 import { getLLMConfig as getAnthropicLLMConfig } from '~/endpoints/anthropic/llm';
 import { getOpenAILLMConfig, extractDefaultParams } from './llm';
@@ -35,6 +36,15 @@ export function getOpenAIConfig(
     sessionId,
     userId,
   } = options;
+
+  // Log when sessionId/userId are present
+  if (sessionId || userId) {
+    logger.info('[OpenAI Config] Session info extracted from options', {
+      hasSessionId: !!sessionId,
+      hasUserId: !!userId,
+      endpoint,
+    });
+  }
 
   /** Extract default params from customParams.paramDefinitions */
   const defaultParams = extractDefaultParams(options.customParams?.paramDefinitions);
@@ -182,10 +192,20 @@ export function getOpenAIConfig(
   if (configOptions?.baseURL != null) {
     if (directEndpoint === true || (endpoint && endpoint !== 'openai' && endpoint !== 'azureOpenAI')) {
       // For custom endpoints or when directEndpoint is true, add detailed logging
+      // and inject session info if available
+      if (sessionId || userId) {
+        logger.info('[OpenAI Config] Creating fetch with session info injection', {
+          endpoint,
+          hasSessionId: !!sessionId,
+          hasUserId: !!userId,
+        });
+      }
       configOptions.fetch = createFetch({
         directEndpoint: directEndpoint === true,
         reverseProxyUrl: configOptions?.baseURL,
         endpoint: endpoint || 'unknown',
+        sessionId,
+        userId,
       }) as unknown as Fetch;
     }
   }

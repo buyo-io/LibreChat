@@ -1,4 +1,5 @@
 import { EModelEndpoint, removeNullishValues } from 'librechat-data-provider';
+import { logger } from '@librechat/data-schemas';
 import type { BindToolsInput } from '@langchain/core/language_models/chat_models';
 import type { SettingDefinition } from 'librechat-data-provider';
 import type { AzureOpenAIInput } from '@langchain/openai';
@@ -346,15 +347,26 @@ export function getOpenAILLMConfig({
   if (sessionId) {
     modelKwargs.session_id = sessionId;
     hasModelKwargs = true;
+    logger.info('[OpenAI LLM Config] Injecting sessionId into modelKwargs', {
+      sessionId: '[REDACTED]',
+      endpoint,
+    });
   }
   
   if (userId) {
     modelKwargs.user_id = userId;
     hasModelKwargs = true;
+    logger.info('[OpenAI LLM Config] Injecting userId into modelKwargs', {
+      userId: '[REDACTED]',
+      endpoint,
+    });
   }
 
   if (hasModelKwargs) {
     llmConfig.modelKwargs = modelKwargs;
+    logger.info('[OpenAI LLM Config] ModelKwargs set in llmConfig', {
+      keys: Object.keys(modelKwargs),
+    });
   }
 
   if (!azure) {

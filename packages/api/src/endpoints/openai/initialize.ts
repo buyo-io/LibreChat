@@ -1,4 +1,5 @@
 import { ErrorTypes, EModelEndpoint, mapModelToAzureConfig } from 'librechat-data-provider';
+import { logger } from '@librechat/data-schemas';
 import type {
   BaseInitializeParams,
   InitializeResultBase,
@@ -131,6 +132,18 @@ export async function initializeOpenAI({
     !Array.isArray(endpointConfig) &&
     'injectSessionInfo' in endpointConfig &&
     endpointConfig.injectSessionInfo === true;
+
+  if (injectSessionInfo) {
+    logger.info('[OpenAI Initialize] Session info injection ENABLED for endpoint', {
+      endpoint,
+      conversationId: req.body.conversationId ? '[REDACTED]' : undefined,
+      userId: req.user?.id ? '[REDACTED]' : undefined,
+    });
+  } else {
+    logger.info('[OpenAI Initialize] Session info injection DISABLED for endpoint', {
+      endpoint,
+    });
+  }
 
   const modelOptions = {
     ...(model_parameters ?? {}),
