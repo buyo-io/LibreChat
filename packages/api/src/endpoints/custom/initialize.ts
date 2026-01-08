@@ -160,27 +160,47 @@ export async function initializeCustom({
     endpointTokenConfig = (await cache.get(tokenKey)) as EndpointTokenConfig | undefined;
   }
 
-  const customOptions = buildCustomOptions(endpointConfig, appConfig, endpointTokenConfig);
+   const customOptions = buildCustomOptions(endpointConfig, appConfig, endpointTokenConfig);
 
-  const clientOptions: Record<string, unknown> = {
-    reverseProxyUrl: baseURL ?? null,
-    proxy: PROXY ?? null,
-    ...customOptions,
-  };
+   // Check if session_id and user_id injection is enabled for this endpoint
+   const injectSessionInfo =
+     !!endpointConfig &&
+     'injectSessionInfo' in endpointConfig &&
+     (endpointConfig as any).injectSessionInfo === true;
 
-  logger.info(`[Custom Endpoint] Client options configured for ${endpoint}:`, {
-    baseURL,
-    model: (model_parameters as any)?.model,
-    injectSessionInfo: customOptions.injectSessionInfo,
-  });
+   if (injectSessionInfo) {
+     logger.info('[Custom Endpoint] Session info injection ENABLED for endpoint', {
+       endpoint,
+       conversationId: req.body.conversationId ? '[REDACTED]' : undefined,
+       userId: req.user?.id ? '[REDACTED]' : undefined,
+     });
+   } else {
+     logger.info('[Custom Endpoint] Session info injection DISABLED for endpoint', {
+       endpoint,
+     });
+   }
 
-  const modelOptions = { ...(model_parameters ?? {}), user: userId };
-  const finalClientOptions = {
-    modelOptions,
-    ...clientOptions,
-  };
+   const clientOptions: Record<string, unknown> = {
+     reverseProxyUrl: baseURL ?? null,
+     proxy: PROXY ?? null,
+     ...customOptions,
+   };
 
-   const options = getOpenAIConfig(apiKey, finalClientOptions, endpoint);
+   logger.info(`[Custom Endpoint] Client options configured for ${endpoint}:`, {
+     baseURL,
+     model: (model_parameters as any)?.model,
+     injectSessionInfo: customOptions.injectSessionInfo,
+   });
+
+   const modelOptions = { ...(model_parameters ?? {}), user: userId };
+   const finalClientOptions = {
+     modelOptions,
+     ...clientOptions,
+     sessionId: injectSessionInfo ? req.body.conversationId : undefined,
+     userId: injectSessionInfo ? req.user?.id : undefined,
+   };
+
+    const options = getOpenAIConfig(apiKey, finalClientOptions, endpoint);
    if (options != null) {
      // Only use legacy content mode if specifically configured
      // Custom endpoints should work with standard OpenAI response format
